@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="net-doc-jee-doclet" default="main" basedir=".">
+
+	
+	<property name="doclet.name"	value="net.jakartaee.tools.netdoc.JeeScannerDoclet"/>
+	<property name="src.dir"		value="src"/>
+	<property name="build.dir"		value="build"/>
+	<property name="classes.dir"	value="${build.dir}/classes"/>
+	<property name="jar.dir"		value="${build.dir}/jar"/>
+	<property name="groovy.dir"		value="D:\dev\tools\groovy\groovy-2.4.16\embeddable"/>
+
+	<path id="groovy.classpath">
+		<fileset dir="${groovy.dir}"/>
+	</path>
+	<path id="classpath">
+		<fileset dir="${groovy.dir}"/>
+	</path>
+	
+	<taskdef name="groovyc" classname="org.codehaus.groovy.ant.Groovyc" classpathref="groovy.classpath"/>
+
+	<target name="clean">
+		<delete dir="${build.dir}"/>
+	</target>
+
+	<target name="compile">
+		<mkdir dir="${classes.dir}" />
+		<groovyc srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath">
+			<javac source="1.8" target="1.8"/>
+		</groovyc>		
+	</target>
+
+
+	<target name="jar" depends="compile">
+		<mkdir dir="{jar.dir}"/>
+		<jar destfile = "${jar.dir}/${ant.project.name}.jar" basedir="${classes.dir}">
+<!--
+			<manifest>
+				<attribute name="Main-Class" value="Dummy"/>
+			</manifest>
+-->
+			<zipgroupfileset dir="${groovy.dir}" includes="*.jar" />
+		</jar>
+	</target>
+<!--	
+	<target name="run" depends="jar">
+		<java jar="${jar.dir}/${ant.project.name}.jar" fork="true"></java>
+	</target>
+	
+	<target name="clean-build" depends="clean,jar"/>
+-->
+	
+	<target name="main" depends="clean,jar"/>
+	
+</project>
