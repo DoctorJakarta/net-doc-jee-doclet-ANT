@@ -7,32 +7,37 @@ import com.sun.javadoc.MethodDoc
 import com.sun.javadoc.Parameter
 import com.sun.javadoc.AnnotationDesc.ElementValuePair
 
-import net.jakartaee.tools.netdoc.model.Servlet
-import net.jakartaee.tools.netdoc.model.WebSocket
-
+import net.jakartaee.tools.netdoc.model.*
+import net.jakartaee.tools.netdoc.Util
 
 class WebSocketDetector {
 	private static final String SOCKET_ANNOTAION = "ServerEndpoint";
 	
-	public Map<String, WebSocket> findWebSockets(RootDoc root){
+	public List<WebSocket> findWebSockets(RootDoc root){
 		ClassDoc[] classDocs = root.classes();
-		Map<String, WebSocket> webSockets = new HashMap<>();
+		List<WebSocket> webSockets = new ArrayList<>();
 		for ( ClassDoc cd : classDocs ) {
 			WebSocket ws = getWebSockets(cd);
 			
 			if ( ws == null )  continue;	// Ignore classes that are not WebSocket
 			
-			webSockets.put (ws.clazz, ws);			
+			webSockets.add (ws);			
 		}
 		return webSockets;
 	}
 	
 	private WebSocket getWebSockets(ClassDoc cd) {
 		if ( !isWebSocket(cd) ) return null;
-		List<String> annotationList = getAnnotations(cd);
-		boolean hasAnnotations = ( annotationList ? !annotationList.empty : false );
 		
-		WebSocket webSocket = new WebSocket(clazz: cd.toString(), annotations: annotationList, hasAnnotations: hasAnnotations);
+		//List<String> annotationList = getAnnotations(cd);
+		//boolean hasAnnotations = ( annotationList ? !annotationList.empty : false );
+
+		List<SocketEndpoint> endpoints = new ArrayList<>();
+		String path = getAnnotations(cd);
+		if ( path ) endpoints.add( new SocketEndpoint(path: path, type: SOCKET_TYPE.Server));
+
+		
+		WebSocket webSocket = new WebSocket(className: Util.getClassName(cd), packageName: Util.getPackageName(cd), endpoints: endpoints );
 		
 		return webSocket;
 	}

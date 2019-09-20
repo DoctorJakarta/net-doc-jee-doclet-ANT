@@ -3,7 +3,8 @@ package net.jakartaee.tools.netdoc.detectors
 import com.sun.javadoc.ClassDoc
 import com.sun.javadoc.RootDoc
 
-import net.jakartaee.tools.netdoc.model.NetConnection
+import net.jakartaee.tools.netdoc.model.*
+import net.jakartaee.tools.netdoc.Util
 
 class NetConnectionDetector {
 	private static final String NET_IMPORT_PATH = ".net.";
@@ -11,15 +12,15 @@ class NetConnectionDetector {
 	private static final String SERVER_SOCKET_CLASS = "ServerSocket";
 	private static final String SOCKET_CLASS = "Socket";
 	
-	public Map<String, NetConnection> findNetConnections(RootDoc root){
+	public List<NetConnection> findNetConnections(RootDoc root){
 		ClassDoc[] classDocs = root.classes();
-		Map<String, NetConnection> netConnections = new HashMap<>();
+		List<NetConnection> netConnections = new ArrayList<>();
 		for ( ClassDoc cd : classDocs ) {
 			NetConnection nc = getNetConnection(cd);
 			
 			if ( nc == null )  continue;	// Ignore classes that are not Net Connections
-			
-			netConnections.put (nc.clazz, nc);
+
+			netConnections.add (nc);
 		}
 		return netConnections;
 	}
@@ -53,7 +54,7 @@ class NetConnectionDetector {
 			}
 			
 		}
-		if ( hasUrlImport || hasServerSocketImport || hasSocketImport ) return new NetConnection( clazz: cd.toString(), imports: netImports, hasUrlConnection: true, hasServerSockets: hasServerSocketImport, hasSockets: hasSocketImport);
+		if ( hasUrlImport || hasServerSocketImport || hasSocketImport ) return new NetConnection(className: Util.getClassName(cd), packageName: Util.getPackageName(cd), hasUrlConnection: true, hasServerSockets: hasServerSocketImport, hasSockets: hasSocketImport);
 		return null;
 	}
 }

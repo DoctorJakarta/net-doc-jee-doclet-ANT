@@ -8,93 +8,45 @@ import com.sun.javadoc.RootDoc
 import com.sun.javadoc.AnnotationDesc.ElementValuePair
 
 import net.jakartaee.tools.netdoc.model.*
+import net.jakartaee.tools.netdoc.Util
 
 class ServletDetector {
 	private static final String SERVLET_CLASS = "javax.servlet.GenericServlet";
 	
 	private static final String space = "           ";
 	
-//	public Map<String, Servlet> findServlets(RootDoc root){
-//		ClassDoc[] classDocs = root.classes();
-//		Map<String, Servlet> servlets = new HashMap<>();
-//		for ( ClassDoc cd : classDocs ) {
-//			Servlet s = getServlet(cd);
-//			
-//			if ( s == null) continue;	// Ignore classes that are not Servlets
-//
-//			println("Got servlet: "+ s)
-//			servlets.put (s.x_class, s);
-//			//servlets.put ("GET_OR_POST", s);
-//			
-//		}
-//		return servlets;
-//	}
-
-//	private Servlet getServlet(ClassDoc cd) {
-//		ClassDoc cdServlet = cd.findClass(SERVLET_CLASS);
-//		
-//		println("Got Servlet interfaces: " + cdServlet.getMetaPropertyValues());
-//
-//		if ( cd == null || cdServlet == null || !cd.subclassOf(cdServlet) ) return; 	// Ignore classes that are not subclasses of javax.servlet.GenericServlet
-//		
-//		List<String> annotationList = getAnnotations(cd);
-//		boolean hasAnnotations = ( annotationList ? !annotationList.empty : false );
-//		
-//		
-//		//if (annotations == null ) System.out.println("Got null annotations for cd: "+cd);
-//		
-//		Servlet servlet = new Servlet(x_class: cd.toString(), x_annotations: annotationList, x_hasAnnotations: hasAnnotations);
-//		
-//		System.out.println("Printing Servlet methods for CD: " + cd.methods(false));
-//		printMethods(cd);
-//		return servlet;
-//	}
-
-	public Map<String, ServletMethodMap> findServlets(RootDoc root){
+	public List<Servlet> findServlets(RootDoc root){
 		ClassDoc[] classDocs = root.classes();
-		Map<String, ServletMethodMap> servletMethodMap = new HashMap<>();
+		List<Servlet> servlets = new ArrayList<>();
 		for ( ClassDoc cd : classDocs ) {
-			ClassDoc cdServlet = cd.findClass(SERVLET_CLASS);
+			Servlet s = getServlet(cd);
 			
-			println("Got Servlet interfaces: " + cdServlet.getMetaPropertyValues());
-	
-			if ( cd == null || cdServlet == null || !cd.subclassOf(cdServlet) ) continue; 	// Ignore classes that are not subclasses of javax.servlet.GenericServlet
-			List<String> annotationList = getAnnotations(cd);
-			boolean hasAnnotations = ( annotationList ? !annotationList.empty : false );
-			
-			
-			//if (annotations == null ) System.out.println("Got null annotations for cd: "+cd);
-			
-			//Servlet servlet = new Servlet(x_class: cd.toString(), x_annotations: annotationList, x_hasAnnotations: hasAnnotations);
+			if ( s == null) continue;	// Ignore classes that are not Servlets
 
-			System.out.println("Printing Servlet methods for CD: " + cd.methods(false));
-			printMethods(cd);
-			for( MethodDoc method: cd.methods(false)) {
-				Map<String, ServletMethod> servletMethod = [:];
-				//servletMethod.put(method, new ServletMethod(operationId: method.name(), parameters: params, produces: producesList, x_class: cd.toString() ));
-				servletMethod.put(method, new ServletMethod(operationId: method.name(), x_class: cd.toString() ));
-				System.out.println("Got Method: "+ method);
-				servletMethodMap.put(method, servletMethod);
-			}
-
-	
+			println("Got servlet: "+ s)
+			servlets.add (s);			
 		}
-
-		return servletMethodMap;
-	}
-	public Map<String, ServletMethodMap> getServletMap(RootDoc root){
-		Map<String, ServletMethodMap> servletMethodMap = [:];
-		
-		for ( MethodDoc method: cd.methods(false) ) {
-			servletMethodMap.put(path, rsMethod);
-			
-		}
-		//return new RestService(clazz: cd.toString(), urlPattern: pathAnnotation, restMethods : rsMethods);
-		
-		return servletMethodMap;		// TODO: Return MapEntry with the verb as the key
+		return servlets;
 	}
 
+	private Servlet getServlet(ClassDoc cd) {
+		ClassDoc cdServlet = cd.findClass(SERVLET_CLASS);
+		
+		println("Got Servlet interfaces: " + cdServlet.getMetaPropertyValues());
+
+		if ( cd == null || cdServlet == null || !cd.subclassOf(cdServlet) ) return; 	// Ignore classes that are not subclasses of javax.servlet.GenericServlet
+		
+		System.out.println("Printing Servlet methods for CD: " + cd.methods(false));
+		printMethods(cd);
+		
+		List<UrlPattern> urlPatterns = new ArrayList<>();
+		String path = getAnnotations(cd);
+		if ( path ) urlPatterns.add( new UrlPattern(path: path, config: URLPATTERN_CONFIG.Annotation));
+		Servlet servlet = new Servlet(className: Util.getClassName(cd), packageName: Util.getPackageName(cd), urlPatterns: urlPatterns, methods: getMethodNames(cd));
+		return servlet;
+	}
 	
+		
 	private void printMethods(ClassDoc cd) {
 		System.out.print(space + "Methods --> " );
 		for ( MethodDoc aMethod: Arrays.asList(cd.methods(false)) ) {
@@ -103,12 +55,30 @@ class ServletDetector {
 		System.out.println();
 	}
 	
-	private List<String> getAnnotations(ClassDoc cd) {
-		List<String> annotations = new ArrayList<>();
-		for ( AnnotationDesc ad : Arrays.asList(cd.annotations()) ) {
-			annotations.add(ad.toString());
+	private List<String> getMethodNames(ClassDoc cd) {
+		List<String> methods = new ArrayList<>();
+		for ( MethodDoc aMethod: Arrays.asList(cd.methods(false)) ) {
+			if ( "doGet".equals(aMethod.name() ) ) methods.add("GET");
+			else if ( "doPost".equals(aMethod.name() ) ) methods.add("POST");
 		}
-		return annotations;
+		return methods;
+	}
+	
+	private String getAnnotations(ClassDoc cd) {
+		String returnStr;
+		for ( AnnotationDesc ad : Arrays.asList(cd.annotations()) ) {
+			for (ElementValuePair p : ad.elementValues()) {
+				System.out.println("Checking AnnotationDesc name: " + p.element().name() + " value: " + p.value().value());
+				if ( "urlPatterns".equals(p.element().name()) || "value".equals(p.element().name()) ) {
+					String values =  p.value().value().toString();
+					System.out.println("Got AnnotationDesc name: " + p.element().name() + " value: " + values);
+					//annotations.add(p.value().value());
+					//returnStr = values.replace("\"", "'");	
+					returnStr = values;	
+				}
+			}
+		}
+		return returnStr;
 	}
 		
 

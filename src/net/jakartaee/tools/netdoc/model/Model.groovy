@@ -1,20 +1,13 @@
 package net.jakartaee.tools.netdoc.model
 import groovy.transform.ToString
 
-
 @ToString
 class Report {
-	String swagger = '2.0'
 	Info info
-	String host = 'localhost:8080'
-	String basePath = '/JEE8-Sample/api/v1.0'
-	List<String> schemes = ["http"]
-	
-	Map<String, Servlet> servletPaths
-	Map<String, RestMethodMap> paths				// OpenAPI3	
-//	Map<String, WebSocket> webSockets
-//	Map<String, NetConnection> netConnections
-	
+	List<Servlet> servlets
+	List<Service> services	
+	List<WebSocket> sockets
+	List<NetConnection> connections	
 }
 
 @ToString
@@ -23,78 +16,61 @@ class Info {
 	String version
 }
 
-
-
 @ToString
 class Servlet {
-	String x_class		// Not sure how to easily handle x- extensions to openAPI.  Who thought a negative sign was a good character for a naming standard?
-	List x_parents
-	boolean x_hasAnnotations = false
-	boolean x_hasWebXml = false
-	List x_annotations
-	Set x_urlPatterns
-	
-	String operationId
-	List<String> produces
-	List<Map> parameters
-	Map responses = ['default' : new Response() ]
-
+	String className		// class is a reserved work.
+	String packageName		// package is a reserved work.
+	boolean hasWebXml = false
+	List methods
+	List<UrlPattern> urlPatterns
 }
 
-@ToString
-class ServletMethodMap {
-	String clazz				// class is a reserved word, as is getClass() method
-	String urlPattern			// The single urlPattern may be a regEx suppring multiple patterns
-	Map<String, ServletMethod> servletMethods
+enum SERVICE_TYPE{REST, SOAP}
+
+@ToString			// This was the original working version
+class Service {
+	String className		// class is a reserved work.
+	String packageName		// package is a reserved work.
+	SERVICE_TYPE type = SERVICE_TYPE.REST
+	List<UrlPattern> urlPatterns
+	List<RestMethod> methods
 }
 
+enum URLPATTERN_CONFIG{WebXml, Annotation}
+
 @ToString
-class ServletMethod {
-	//String verb				// This is the map KEY
-	String x_class				// Not sure how to easily handle x- extensions to openAPI.  Who thought a negative sign was a good character for a naming standard?
-	String operationId
-	List<String> produces
-	List<Map> parameters
-	Map responses = ['default' : new Response() ]
+class UrlPattern{	
+	String path
+	URLPATTERN_CONFIG config
 }
 
+enum SOCKET_TYPE{Server, Client}
 
 @ToString
-class RestMethodMap {
-	String clazz				// class is a reserved word, as is getClass() method
-	String urlPattern			// The single urlPattern may be a regEx suppring multiple patterns
-	Map<String, RestMethod> restMethods
+class SocketEndpoint{
+	String path
+	SOCKET_TYPE type
 }
 
 @ToString
 class RestMethod {
-	//String verb				// This is the map KEY
-	String x_class				// Not sure how to easily handle x- extensions to openAPI.  Who thought a negative sign was a good character for a naming standard?
-	String operationId
-	List<String> produces			
-	List<Map> parameters
-	Map responses = ['default' : new Response() ]
-}
-
-@ToString
-class Response {
-	String description = 'successful operation';
+	String verb
+	String method
+	List<String> params
 }
 
 @ToString
 class WebSocket{
-	String clazz				// class is a reserved word, as is getClass() method
-	List parents
-	boolean hasAnnotations = false
+	String className		// class is a reserved work.
+	String packageName		// package is a reserved work.
 	boolean hasWebXml = false
-	List annotations
+	List<SocketEndpoint> endpoints
 }
 
 @ToString
 class NetConnection {
-	String clazz				// class is a reserved word, as is getClass() method
-	List parents
-	List imports
+	String className		// class is a reserved work.
+	String packageName		// package is a reserved work.
 	boolean hasUrlConnection = false
 	boolean hasServerSockets = false
 	boolean hasSockets = false
